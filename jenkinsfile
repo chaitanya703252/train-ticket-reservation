@@ -1,3 +1,5 @@
+
+
 pipeline {
     agent any
 
@@ -6,10 +8,26 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Source') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build with Maven using Docker') {
             steps {
+                echo 'Building the Java application using Maven inside Docker...'
                 sh '''
                 docker run --rm -v "$PWD":/app -w /app maven:3.8.5-openjdk-17 mvn clean package -DskipTests
+                '''
+            }
+        }
+
+        stage('Verify Dockerfile Presence') {
+            steps {
+                sh '''
+                echo "Checking for Dockerfile..."
+                ls -l Dockerfile
                 '''
             }
         }
@@ -24,6 +42,7 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
+                echo 'Starting Docker container...'
                 sh '''
                 docker rm -f train-ticket || true
                 docker run -d --name train-ticket -p 7278:8080 ${DOCKER_IMAGE}
@@ -44,4 +63,3 @@ pipeline {
         }
     }
 }
-
