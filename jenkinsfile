@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'train-ticket-reservation:latest'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/chaitanya703252/train-ticket-reservation.git'
+            }
+        }
+
+        stage('Build with Maven') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${DOCKER_IMAGE}")
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                sh '''
+                docker rm -f train-ticket || true
+                docker run -d --name train-ticket -p 8080:8080 ${DOCKER_IMAGE}
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+        success {
+            echo 'Pipeline succeeded.'
+        }
+    }
+}
